@@ -4,10 +4,11 @@ import gradio as gr
 import pandas as pd
 from transformers import pipeline
 
-# Initiate DistilBERT and RoBERTa sentiment analysis pipelines
-db_classifier = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english", truncation=True)
-rb_classifier = pipeline("sentiment-analysis", model="siebert/sentiment-roberta-large-english", truncation=True)
-
+# Dictionary of available models
+models = {
+    "DistilBERT": "distilbert-base-uncased-finetuned-sst-2-english",
+    "RoBERTa": "siebert/sentiment-roberta-large-english"
+}
 
 def classify_reviews(file, model_choice):
     """
@@ -39,15 +40,23 @@ def classify_reviews(file, model_choice):
     if not all(isinstance(review, str) and review.strip() for review in df["review"]):
         return None, "The 'review' column must contain valid, non-empty text."
     
-    # Choose model for the pipeline
-    model = db_classifier if model_choice == "DistilBERT" else rb_classifier
+    # Initiate pipeline with the selected model
+    try:
+        classifier = pipeline(
+            "sentiment-analysis",
+            model = models[model_choice],
+            truncation = True,
+            max_length = 512
+        )
+    except Exception as e:
+        return None, f"Error loading model: {e}"
 
     # Converts reviews to a list of strings
     reviews = df["review"].tolist()
 
     # Run the sentiment analysis model
     try:
-        results = model(reviews)
+        results = classifier(reviews)
     except Exception as e:
         return None, f"Error during sentiment analysis {e}"
     
@@ -64,7 +73,7 @@ def classify_reviews(file, model_choice):
     output_df.to_csv(temp_path, index=False)
 
     # Return the path to the generated CSV for download
-    return temp_path
+    return temp_path, "Done! Download ready."
 
 # Gradio interface for uploading and downloading CSV files
 demo = gr.Interface(
@@ -74,13 +83,14 @@ demo = gr.Interface(
         gr.Radio(["DistilBERT", "RoBERTa"], label="Select sentiment model", value="DistilBERT")
     ],
     outputs = [
-        gr.File(label="Download results")
+        gr.File(label="Download results"),
+        gr.Text(label="Status")
     ],
     title = "Sentiment classifier for reviews (CSV)",
     description = "Upload a CSV file with a 'review' column. Choose a model to classify each review. Download the output with sentiment scores.",
     flagging_mode="never"
 )
 
-# Launch the app on localhost
+# Launch the app on
 if __name__ == "__main__":
     demo.launch()
