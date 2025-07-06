@@ -44,7 +44,7 @@ python scripts/gradio_sentiment_demo.py
 
 Process a CSV of reviews and save results:
 ```bash
-python scripts/sentiment_analysis.py \<input.csv\> \ [--model distilbert|roberta] \ [--output-dir output_folder]
+python scripts/sentiment_analysis.py <input.csv> \ [--model distilbert|roberta] \ [--output-dir output_folder]
 ```
 
 - `<input.csv>`: CSV file with reviews.
